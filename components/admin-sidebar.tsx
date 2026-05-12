@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { ChevronsLeft, ChevronsRight, Sparkles, Wrench, LayoutDashboard, Users, BarChart3, UserCog, Settings, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Sparkles, Wrench, Hammer, LayoutDashboard, Users, BarChart3, UserCog, Settings, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_COLLAPSED_KEY = "fixora-admin-sidebar-collapsed";
@@ -105,6 +105,17 @@ export function AdminSidebar() {
             <Wrench className="size-5 shrink-0" aria-hidden />
             <span className={cn("mx-2", collapsed && "sr-only")}>
               Tools Management
+            </span>
+          </Link>
+
+          <Link
+            href="/admin/tools-repair"
+            className={navItemClass(collapsed)}
+            title="Tools Repair"
+          >
+            <Hammer className="size-5 shrink-0" aria-hidden />
+            <span className={cn("mx-2", collapsed && "sr-only")}>
+              Tools Repair
             </span>
           </Link>
 
