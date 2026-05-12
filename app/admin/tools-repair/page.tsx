@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "react-toastify";
 import {
   Loader2,
@@ -12,6 +12,10 @@ import {
   Plus,
   Minus,
   X,
+  Eye,
+  Pencil,
+  Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -83,16 +87,56 @@ type RepairRow = {
   form_no: string | null;
   form_date: string;
   part_number: string | null;
+  brand_model?: string | null;
+  quantity?: string | null;
   tool_description: string | null;
   control_number: string | null;
+  utilization?: string | null;
   service_priority: string | null;
+  low_repair_date?: string | null;
+  jo_no?: string | null;
+  jo_customer?: string | null;
+  jo_desc?: string | null;
+  faults_json?: unknown;
+  summary_problems?: string | null;
   requester_name: string | null;
+  designation?: string | null;
+  bay_section?: string | null;
+  foreman?: string | null;
+  tool_keeper_name?: string | null;
+  accepted_by?: string | null;
+  service_findings?: string | null;
+  corrective_reconditioned?: number;
+  corrective_parts_replaced?: number;
+  corrective_others?: string | null;
+  parts_needed_json?: unknown;
   final_repairable: number;
   final_usable_parts_extraction: number;
   final_disposal: number;
   final_unit_replacement: number;
+  pr_no?: string | null;
+  pr_date?: string | null;
+  requested_by?: string | null;
+  prepared_by?: string | null;
+  inspected_by?: string | null;
+  approved_by?: string | null;
   created_at?: string;
 };
+
+function parseJsonMaybe<T>(v: unknown): T | null {
+  if (v === null || v === undefined) return null;
+  if (typeof v === "object") return v as T;
+  if (typeof v === "string") {
+    const s = v.trim();
+    if (!s) return null;
+    try {
+      return JSON.parse(s) as T;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
 function formatAssessment(r: RepairRow): string {
   const parts: string[] = [];
@@ -138,6 +182,13 @@ export default function ToolsRepairPage() {
   const [saving, setSaving] = useState(false);
   const [rows, setRows] = useState<RepairRow[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [hasScrollbar, setHasScrollbar] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [deletingRow, setDeletingRow] = useState<RepairRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [editId, setEditId] = useState<number | null>(null);
+  const [viewOnly, setViewOnly] = useState(false);
+  const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
   const [faultChecks, setFaultChecks] = useState<Record<string, boolean>>({});
   const [partsNeeded, setPartsNeeded] = useState<string[]>(emptyPartsNeeded);
   const [availableItems, setAvailableItems] = useState<{ PartNumber: string; Brand: string; PartDescription: string }[]>([]);
@@ -360,6 +411,107 @@ export default function ToolsRepairPage() {
     setFaultChecks({});
     setPartsNeeded(emptyPartsNeeded());
     setAvailableControls([]);
+    setEditId(null);
+    setViewOnly(false);
+  };
+
+  const hydrateFormFromRow = (r: RepairRow) => {
+    const faults = parseJsonMaybe<Record<string, string[]>>(r.faults_json) || null;
+    const parts = parseJsonMaybe<string[]>(r.parts_needed_json) || null;
+
+    setForm((prev) => ({
+      ...prev,
+      form_no: r.form_no || "",
+      form_date: typeof r.form_date === "string" ? r.form_date.slice(0, 10) : (r.form_date as unknown as string),
+      to_purchase: prev.to_purchase,
+      for_filing: prev.for_filing,
+      part_number: r.part_number || "",
+      brand_model: r.brand_model || "",
+      quantity: r.quantity || "",
+      tool_description: r.tool_description || "",
+      control_number: r.control_number || "",
+      utilization: (r.utilization as "" | "site" | "shop") || "",
+      service_priority: (r.service_priority as "" | "high" | "medium" | "low") || "",
+      low_repair_date: r.low_repair_date || "",
+      jo_no: r.jo_no || "",
+      jo_customer: r.jo_customer || "",
+      jo_desc: r.jo_desc || "",
+      summary_problems: r.summary_problems || "",
+      requester_name: r.requester_name || "",
+      designation: r.designation || "",
+      bay_section: r.bay_section || "",
+      foreman: r.foreman || "",
+      tool_keeper_name: r.tool_keeper_name || "",
+      accepted_by: r.accepted_by || "",
+      service_findings: r.service_findings || "",
+      corrective_reconditioned: !!r.corrective_reconditioned,
+      corrective_parts_replaced: !!r.corrective_parts_replaced,
+      corrective_others: r.corrective_others || "",
+      final_repairable: !!r.final_repairable,
+      final_usable_parts_extraction: !!r.final_usable_parts_extraction,
+      final_disposal: !!r.final_disposal,
+      final_unit_replacement: !!r.final_unit_replacement,
+      pr_no: r.pr_no || "",
+      pr_date: r.pr_date || "",
+      requested_by: r.requested_by || "",
+      prepared_by: r.prepared_by || "",
+      inspected_by: r.inspected_by || "",
+      approved_by: r.approved_by || "",
+    }));
+
+    if (faults) {
+      const nextChecks: Record<string, boolean> = {};
+      for (const g of Object.keys(faults)) {
+        const arr = faults[g] || [];
+        for (const id of arr) nextChecks[id] = true;
+      }
+      setFaultChecks(nextChecks);
+    } else {
+      setFaultChecks({});
+    }
+
+    if (parts && Array.isArray(parts)) {
+      const trimmed = parts.map((s) => String(s ?? "").trim());
+      setPartsNeeded(trimmed.length ? trimmed : emptyPartsNeeded());
+    } else {
+      setPartsNeeded(emptyPartsNeeded());
+    }
+
+    if (r.part_number) fetchControls(r.part_number);
+  };
+
+  const startEdit = (r: RepairRow) => {
+    setViewOnly(false);
+    hydrateFormFromRow(r);
+    setEditId(r.id);
+    setIsFormModalOpen(true);
+  };
+
+  const startView = (r: RepairRow) => {
+    setViewOnly(true);
+    hydrateFormFromRow(r);
+    setEditId(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deletingRow) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/admin/repair-request/${deletingRow.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Delete failed.");
+        return;
+      }
+      toast.success(data.message || "Deleted.");
+      setDeletingRow(null);
+      fetchList();
+    } catch {
+      toast.error("Delete failed.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const buildFaultsJson = () => {
@@ -385,6 +537,7 @@ export default function ToolsRepairPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (viewOnly) return;
     if (!form.form_date) {
       toast.error("Date is required.");
       return;
@@ -400,8 +553,10 @@ export default function ToolsRepairPage() {
 
     setSaving(true);
     try {
-      const res = await fetch("/api/admin/repair-request", {
-        method: "POST",
+      const url = editId ? `/api/admin/repair-request/${editId}` : "/api/admin/repair-request";
+      const method = editId ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
@@ -414,7 +569,7 @@ export default function ToolsRepairPage() {
         toast.error(data.error || "Save failed.");
         return;
       }
-      toast.success(data.message || "Saved.");
+      toast.success(data.message || (editId ? "Updated." : "Saved."));
       resetForm();
       setIsFormModalOpen(false);
       fetchList();
@@ -452,6 +607,9 @@ export default function ToolsRepairPage() {
     return filteredRows.slice(start, start + itemsPerPage);
   }, [filteredRows, currentPage]);
 
+  const indexOfFirst = (currentPage - 1) * itemsPerPage;
+  const indexOfLast = indexOfFirst + pageRows.length;
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
@@ -459,6 +617,29 @@ export default function ToolsRepairPage() {
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    const checkScrollbar = () => {
+      if (scrollRef.current) {
+        setHasScrollbar(scrollRef.current.scrollHeight > scrollRef.current.clientHeight);
+      }
+    };
+
+    checkScrollbar();
+    window.addEventListener("resize", checkScrollbar);
+    return () => window.removeEventListener("resize", checkScrollbar);
+  }, [loadingList, searchQuery, currentPage, totalPages, filteredRows.length]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest(".action-menu-btn") && !target.closest(".action-menu-dropdown")) {
+        setOpenActionMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const toggleFault = (id: string) => {
     setFaultChecks((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -470,7 +651,7 @@ export default function ToolsRepairPage() {
   const labelClass = "mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400";
 
   return (
-    <div className="flex max-w-full flex-col space-y-6 overflow-hidden pb-8">
+    <div className="flex flex-col h-[calc(100vh-128px)] space-y-4 max-w-full overflow-hidden">
       <div className="flex flex-col gap-4 px-1 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -511,6 +692,7 @@ export default function ToolsRepairPage() {
             type="button"
             onClick={() => {
               resetForm();
+              setViewOnly(false);
               setIsFormModalOpen(true);
             }}
             className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
@@ -521,9 +703,14 @@ export default function ToolsRepairPage() {
         </div>
       </div>
 
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Saved requests</h3>
+      <div className="flex flex-1 flex-col min-h-0 space-y-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between shrink-0 px-1">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Request for repair</h3>
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              Track and manage repair requests for tools / equipment / machinery.
+            </p>
+          </div>
           <div className="relative max-w-md flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
             <input
@@ -531,36 +718,66 @@ export default function ToolsRepairPage() {
               placeholder="Search by no., part, description, priority…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-4 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
+              className="h-9 w-full rounded-lg border border-gray-200 bg-white pl-9 pr-4 text-sm transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
             />
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px] text-left text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50/80 dark:border-gray-800 dark:bg-gray-900/50">
-                <tr>
-                  <th className="px-3 py-3 font-semibold text-gray-700 dark:text-gray-300">No.</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 dark:text-gray-300">Date</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 dark:text-gray-300">Part #</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 dark:text-gray-300">Description</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 dark:text-gray-300">Control #</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 dark:text-gray-300">Priority</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 dark:text-gray-300">Requester</th>
-                  <th className="px-3 py-3 font-semibold text-gray-700 dark:text-gray-300">Assessment</th>
+        <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900/50 min-h-0">
+          <div
+            className={cn(
+              "shrink-0 overflow-x-hidden border-b border-gray-200 dark:border-gray-800 bg-blue-50/95 dark:bg-blue-900 transition-[padding]",
+              hasScrollbar ? "pr-[16px]" : "pr-0",
+            )}
+          >
+            <table className="w-full border-collapse text-left text-sm table-fixed">
+              <thead>
+                <tr className="text-blue-900 dark:text-blue-200 whitespace-nowrap">
+                  <th className="border-r border-gray-200 px-4 py-1.5 font-semibold dark:border-gray-800 w-[12%]">
+                    No.
+                  </th>
+                  <th className="border-r border-gray-200 px-4 py-1.5 font-semibold dark:border-gray-800 w-[12%]">
+                    Date
+                  </th>
+                  <th className="border-r border-gray-200 px-4 py-1.5 font-semibold dark:border-gray-800 w-[12%]">
+                    Part #
+                  </th>
+                  <th className="border-r border-gray-200 px-4 py-1.5 font-semibold dark:border-gray-800 w-[18%]">
+                    Description
+                  </th>
+                  <th className="border-r border-gray-200 px-4 py-1.5 font-semibold dark:border-gray-800 w-[12%]">
+                    Control #
+                  </th>
+                  <th className="border-r border-gray-200 px-4 py-1.5 font-semibold dark:border-gray-800 w-[10%]">
+                    Priority
+                  </th>
+                  <th className="border-r border-gray-200 px-4 py-1.5 font-semibold dark:border-gray-800 w-[12%]">
+                    Requester
+                  </th>
+                  <th className="border-r border-gray-200 px-4 py-1.5 font-semibold dark:border-gray-800 w-[12%]">
+                    Assessment
+                  </th>
+                  <th className="px-4 py-1.5 font-semibold text-center w-[8%]">Actions</th>
                 </tr>
               </thead>
+            </table>
+          </div>
+
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto min-h-0 bg-white dark:bg-transparent border-b border-gray-200 dark:border-gray-800"
+          >
+            <table className="w-full border-collapse text-left text-sm table-fixed">
               <tbody>
                 {loadingList ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-12 text-center text-gray-500">
+                    <td colSpan={9} className="px-3 py-12 text-center text-gray-500">
                       <Loader2 className="mx-auto size-6 animate-spin" />
                     </td>
                   </tr>
                 ) : pageRows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-10 text-center text-gray-500">
+                    <td colSpan={9} className="px-3 py-10 text-center text-gray-500">
                       {setupDone
                         ? "No repair requests yet. Click Create request to add one."
                         : "Could not load data. Use “Ensure table” if the database is new."}
@@ -570,33 +787,104 @@ export default function ToolsRepairPage() {
                   pageRows.map((r) => (
                     <tr
                       key={r.id}
-                      className="border-b border-gray-100 last:border-0 dark:border-gray-800/80"
+                      className="transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/30 whitespace-nowrap group"
                     >
-                      <td className="px-3 py-2.5 text-gray-800 dark:text-gray-200">
+                      <td className="border-b border-r border-gray-100 px-4 py-1 text-gray-700 dark:border-gray-800 dark:text-gray-300 group-last:border-b-0 w-[12%]">
                         {r.form_no || "—"}
                       </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap text-gray-800 dark:text-gray-200">
-                        {typeof r.form_date === "string"
-                          ? r.form_date.slice(0, 10)
-                          : r.form_date}
+                      <td className="border-b border-r border-gray-100 px-4 py-1 text-gray-700 dark:border-gray-800 dark:text-gray-300 group-last:border-b-0 w-[12%]">
+                        {typeof r.form_date === "string" ? r.form_date.slice(0, 10) : r.form_date}
                       </td>
-                      <td className="max-w-[120px] truncate px-3 py-2.5 text-gray-800 dark:text-gray-200">
+                      <td className="border-b border-r border-gray-100 px-4 py-1 text-gray-700 dark:border-gray-800 dark:text-gray-300 group-last:border-b-0 w-[12%]">
                         {r.part_number || "—"}
                       </td>
-                      <td className="max-w-[220px] truncate px-3 py-2.5 text-gray-700 dark:text-gray-300">
+                      <td
+                        className="border-b border-r border-gray-100 px-4 py-1 text-gray-700 dark:border-gray-800 dark:text-gray-300 truncate group-last:border-b-0 w-[18%]"
+                        title={r.tool_description || ""}
+                      >
                         {r.tool_description || "—"}
                       </td>
-                      <td className="max-w-[120px] truncate px-3 py-2.5 text-gray-800 dark:text-gray-200">
+                      <td className="border-b border-r border-gray-100 px-4 py-1 text-gray-700 dark:border-gray-800 dark:text-gray-300 group-last:border-b-0 w-[12%]">
                         {r.control_number || "—"}
                       </td>
-                      <td className="px-3 py-2.5 text-gray-800 dark:text-gray-200">
+                      <td className="border-b border-r border-gray-100 px-4 py-1 text-gray-700 dark:border-gray-800 dark:text-gray-300 group-last:border-b-0 w-[10%]">
                         {formatPriority(r.service_priority)}
                       </td>
-                      <td className="max-w-[140px] truncate px-3 py-2.5 text-gray-800 dark:text-gray-200">
+                      <td
+                        className="border-b border-r border-gray-100 px-4 py-1 text-gray-700 dark:border-gray-800 dark:text-gray-300 truncate group-last:border-b-0 w-[12%]"
+                        title={r.requester_name || ""}
+                      >
                         {r.requester_name || "—"}
                       </td>
-                      <td className="max-w-[200px] truncate px-3 py-2.5 text-gray-700 dark:text-gray-300">
+                      <td
+                        className="border-b border-gray-100 px-4 py-1 text-gray-500 dark:border-gray-800 dark:text-gray-400 truncate group-last:border-b-0 w-[12%]"
+                        title={formatAssessment(r)}
+                      >
                         {formatAssessment(r)}
+                      </td>
+                      <td className="border-b border-gray-100 px-2 py-1 text-center dark:border-gray-800 group-last:border-b-0 w-[8%]">
+                        <div className="relative inline-block text-left">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenActionMenuId(openActionMenuId === r.id ? null : r.id);
+                            }}
+                            className="action-menu-btn inline-flex size-8 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                            title="Actions"
+                          >
+                            <MoreHorizontal className="size-4" />
+                          </button>
+                          {openActionMenuId === r.id && (
+                            <div
+                              className={cn(
+                                "action-menu-dropdown absolute right-0 z-50 w-36 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800",
+                                pageRows.length > 5 && index >= pageRows.length - 3
+                                  ? "bottom-full mb-1"
+                                  : "top-full mt-1",
+                              )}
+                            >
+                              <div className="flex flex-col py-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenActionMenuId(null);
+                                    startView(r);
+                                  }}
+                                  className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/60 dark:hover:text-gray-100 text-left"
+                                >
+                                  <Eye className="size-3.5 shrink-0" />
+                                  <span>View</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenActionMenuId(null);
+                                    startEdit(r);
+                                  }}
+                                  className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 text-left"
+                                >
+                                  <Pencil className="size-3.5 shrink-0" />
+                                  <span>Edit</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenActionMenuId(null);
+                                    setDeletingRow(r);
+                                  }}
+                                  className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:text-gray-300 dark:hover:bg-red-900/30 dark:hover:text-red-400 text-left"
+                                >
+                                  <Trash2 className="size-3.5 shrink-0" />
+                                  <span>Delete</span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -604,39 +892,49 @@ export default function ToolsRepairPage() {
               </tbody>
             </table>
           </div>
-        </div>
 
-        {filteredRows.length > itemsPerPage && (
-          <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>
-              Page {currentPage} of {totalPages} ({filteredRows.length} records)
-            </span>
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-4 border-t border-gray-100 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-900 shrink-0 md:flex-row md:items-center md:justify-between z-10">
+            <div className="text-center text-xs text-gray-500 md:text-left">
+              Showing <span className="font-medium">{filteredRows.length ? indexOfFirst + 1 : 0}</span>{" "}
+              to <span className="font-medium">{indexOfLast}</span> of{" "}
+              <span className="font-medium">{filteredRows.length}</span>{" "}
+              {searchQuery && "matching"} requests
+            </div>
+
+            <div className="flex items-center justify-center gap-2">
               <button
                 type="button"
-                disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="rounded-lg border border-gray-200 px-3 py-1 disabled:opacity-40 dark:border-gray-700"
+                disabled={currentPage === 1}
+                className="flex h-8 items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-medium transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
-                Previous
+                Prev
               </button>
+
+              <div className="flex items-center text-xs font-medium">
+                Page {currentPage} of {totalPages}
+              </div>
+
               <button
                 type="button"
-                disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded-lg border border-gray-200 px-3 py-1 disabled:opacity-40 dark:border-gray-700"
+                disabled={currentPage === totalPages}
+                className="flex h-8 items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-1 text-xs font-medium transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
               >
                 Next
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {isFormModalOpen && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-          onClick={() => setIsFormModalOpen(false)}
+          onClick={() => {
+            setIsFormModalOpen(false);
+            setViewOnly(false);
+          }}
         >
           <div
             className="flex max-h-[90vh] w-full max-w-[1312px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-gray-900"
@@ -650,11 +948,14 @@ export default function ToolsRepairPage() {
                 id="repair-modal-title"
                 className="text-lg font-semibold text-gray-900 dark:text-white"
               >
-                New Request for Repair
+                {viewOnly ? "View Request for Repair" : editId ? "Edit Request for Repair" : "New Request for Repair"}
               </h3>
               <button
                 type="button"
-                onClick={() => setIsFormModalOpen(false)}
+                onClick={() => {
+                  setIsFormModalOpen(false);
+                  setViewOnly(false);
+                }}
                 className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-800 dark:hover:text-gray-200"
                 aria-label="Close"
               >
@@ -665,7 +966,8 @@ export default function ToolsRepairPage() {
               onSubmit={handleSubmit}
               className="flex min-h-0 flex-1 flex-col overflow-hidden"
             >
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 md:p-6">
+              <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+                <fieldset disabled={viewOnly} className="space-y-4">
         <Section title="Transaction no. and Date">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
@@ -1318,26 +1620,86 @@ export default function ToolsRepairPage() {
           </div>
         </Section>
 
+                </fieldset>
               </div>
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-gray-100 bg-gray-50/90 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/80 md:gap-3 md:px-6">
                 <button
                   type="button"
-                  onClick={() => setIsFormModalOpen(false)}
+                  onClick={() => {
+                    setIsFormModalOpen(false);
+                    setViewOnly(false);
+                  }}
                   className="h-10 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-200 dark:hover:bg-gray-800"
                 >
-                  Cancel
+                  {viewOnly ? "Close" : "Cancel"}
                 </button>
 
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
-                >
-                  {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                  Save Request
-                </button>
+                {!viewOnly && (
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+                  >
+                    {saving ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Save className="size-4" />
+                    )}
+                    {editId ? "Save Changes" : "Save Request"}
+                  </button>
+                )}
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete Confirm Modal ── */}
+      {deletingRow && (
+        <div
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onClick={() => setDeletingRow(null)}
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="flex size-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <Trash2 className="size-6 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Delete request?
+              </h3>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                This will permanently delete{" "}
+                <span className="font-medium text-gray-700 dark:text-gray-300">
+                  {deletingRow.form_no || `ID ${deletingRow.id}`}
+                </span>
+                .
+              </p>
+            </div>
+
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingRow(null)}
+                className="h-9 rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="inline-flex h-9 items-center gap-2 rounded-lg bg-red-600 px-4 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-70"
+              >
+                {deleting ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}
