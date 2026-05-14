@@ -16,6 +16,7 @@ import {
   Pencil,
   Trash2,
   MoreHorizontal,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -514,6 +515,236 @@ export default function ToolsRepairPage() {
     }
   };
 
+  const handlePrint = (r: RepairRow) => {
+    const faults = parseJsonMaybe<Record<string, string[]>>(r.faults_json) || {};
+    const parts = parseJsonMaybe<string[]>(r.parts_needed_json) || [];
+    const allFaultIds = new Set([
+      ...(faults.general || []),
+      ...(faults.mechanical || []),
+      ...(faults.electrical || []),
+      ...(faults.safety || []),
+    ]);
+    const ck = (id: string) => allFaultIds.has(id) ? "checked" : "";
+    const v = (s: string | null | undefined) => s || "";
+    const fmtDate = (d: string | null | undefined) => {
+      if (!d) return "";
+      const s = d.slice(0, 10);
+      const [y, m, dd] = s.split("-");
+      return m && dd && y ? `${m}/${dd}/${y}` : s;
+    };
+    const fd = typeof r.form_date === "string" ? r.form_date.slice(0, 10) : "";
+    const partsRows = Array.from({ length: 10 }, (_, i) => {
+      const val = parts[i] ? parts[i].replace(/"/g, "&quot;") : "";
+      return `<span>${i + 1}.</span><span class="u-line" style="min-height:16px;display:inline-block;width:100%">${val}</span>`;
+    }).join("\n");
+
+    const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Request for Repair Form - Enertech Systems</title>
+<style>
+:root{--border-color:#000;--font-main:'Arial',sans-serif}
+body{font-family:var(--font-main);font-size:11px;background:#fff;padding:0;margin:0}
+.page-container{width:100%;max-width:100%;margin:0 auto;background:#fff;padding:0.3in;box-sizing:border-box}
+@page{margin:0.3in}
+.header-top{display:grid;grid-template-columns:1.5fr 3fr 1.5fr;grid-template-rows:auto auto;align-items:flex-end;margin-bottom:5px;gap:10px}
+.u-line{border:none;border-bottom:1px solid var(--border-color);padding:0 5px;font-family:inherit;font-size:11px;outline:none;background:transparent}
+.fieldset-custom{border:1px solid var(--border-color);margin-bottom:12px;padding:10px;position:relative}
+.fieldset-custom legend{font-weight:bold;padding:0 5px;margin-left:10px}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.faults-container{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.column-title{font-weight:bold;height:18px;display:flex;align-items:center;margin-bottom:2px}
+.check-item{display:flex;align-items:center;height:16px;margin-bottom:2px;white-space:nowrap}
+.check-item input{margin-right:5px}
+.text-box{width:100%;border:1px solid var(--border-color);margin-top:5px;box-sizing:border-box;padding:5px;font-family:inherit;min-height:60px;white-space:pre-wrap}
+.user-section{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:repeat(6,16px)}
+.user-left{padding-left:15px}.user-middle{padding:0 10px}
+.user-right{border-left:1px solid var(--border-color);padding-left:20px}
+.user-cell{display:flex;align-items:center}
+.sig-line{width:100%;border-top:1px solid var(--border-color);margin-top:2px;font-size:11px;text-align:center}
+.label-val{display:flex;margin-bottom:8px;align-items:flex-end}
+.label-val span{min-width:80px}
+.maintenance-divider{border-top:2px dashed #000;margin:20px 0 5px 0;text-align:center}
+.maintenance-divider span{display:block;margin-top:5px;font-style:italic;font-weight:bold;font-size:12px}
+.footer-sections{display:grid;grid-template-columns:1.2fr 1fr 1.2fr;gap:0;width:100%}
+.parts-grid{display:grid;grid-template-columns:20px 1fr;gap:4px}
+.technician-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:15px;text-align:left}
+@media print{body{background:none;padding:0}.page-container{padding:0;width:100%;max-width:none}.job-order-print-reduce{flex:1!important}}
+</style></head><body>
+<div class="page-container">
+  <div class="header-top">
+    <div style="grid-row:1;grid-column:1;display:flex;gap:10px">
+      <label><input type="checkbox" ${r.corrective_parts_replaced ? "checked" : ""}> To Purchase</label>
+      <label><input type="checkbox" checked> For Filing</label>
+    </div>
+    <div style="grid-row:1;grid-column:2;text-align:center">
+      <h1 style="font-size:16px;margin:0;letter-spacing:0.5px">ENERTECH SYSTEMS INDUSTRIES, INC.</h1>
+    </div>
+    <div style="grid-row:1;grid-column:3;text-align:right">
+      <div style="display:flex;align-items:center;justify-content:flex-end">
+        <span style="font-size:11px;font-weight:bold;width:45px">No:</span>
+        <span style="font-size:24px;font-weight:bold;font-family:'Courier New',Courier,monospace;border-bottom:1px solid black;width:100px;text-align:center;margin-left:5px">${v(r.form_no)}</span>
+      </div>
+    </div>
+    <div style="grid-row:2;grid-column:1/span 2;text-align:left">
+      <div style="font-size:13px;font-weight:bold">REQUEST FOR REPAIR FORM (Tools/Equipment/Machinery)</div>
+    </div>
+    <div style="grid-row:2;grid-column:3;text-align:right">
+      <div style="display:flex;align-items:center;justify-content:flex-end">
+        <span style="font-size:11px;font-weight:bold;width:45px">Date:</span>
+        <span class="u-line" style="width:100px;margin-left:5px;text-align:center;display:inline-block">${fd}</span>
+      </div>
+    </div>
+  </div>
+
+  <fieldset class="fieldset-custom"><legend>Tools Detail</legend>
+    <div class="row" style="gap:25px">
+      <div style="flex:1.2;display:flex;align-items:center"><span style="min-width:90px">Part Number</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.part_number)}</span></div>
+      <div style="flex:1.2;display:flex;align-items:center"><span style="min-width:90px">Brand/Model</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.brand_model)}</span></div>
+      <div style="flex:1;display:flex;align-items:center"><span style="min-width:100px">Quantity</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.quantity)}</span></div>
+    </div>
+    <div class="row" style="margin-bottom:0;gap:25px">
+      <div style="flex:1.5;display:flex;align-items:center"><span style="min-width:90px">Description</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.tool_description)}</span></div>
+      <div style="flex:1;display:flex;align-items:center"><span style="min-width:100px">Control Number</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.control_number)}</span></div>
+    </div>
+  </fieldset>
+
+  <div class="row" style="gap:8px">
+    <fieldset class="fieldset-custom" style="flex:0.35;margin-bottom:0"><legend>Utilization</legend>
+      <div style="display:grid;grid-template-columns:1fr;grid-template-rows:repeat(2,minmax(16px,auto));gap:2px">
+        <div class="check-item"><input type="checkbox" ${r.utilization === "site" ? "checked" : ""}><span style="margin-left:5px">Site</span></div>
+        <div class="check-item"><input type="checkbox" ${r.utilization === "shop" ? "checked" : ""}><span style="margin-left:5px">Shop</span></div>
+      </div>
+    </fieldset>
+    <fieldset class="fieldset-custom" style="flex:0.7;margin-bottom:0"><legend>Service Priority</legend>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,minmax(16px,auto));gap:5px">
+        <div class="check-item"><input type="checkbox" ${r.service_priority === "high" ? "checked" : ""}><span style="margin-left:5px">High</span></div>
+        <div class="check-item"><input type="checkbox" ${r.service_priority === "medium" ? "checked" : ""}><span style="margin-left:5px">Medium</span></div>
+        <div class="check-item"><input type="checkbox" ${r.service_priority === "low" ? "checked" : ""}><span style="margin-left:5px">Low</span></div>
+        <div style="grid-column:span 3;display:flex;align-items:flex-end;flex-wrap:nowrap">
+          <span style="font-size:10px;padding-left:10px;white-space:nowrap">For low, please set repair date :</span>
+          <span class="u-line" style="flex:1;min-width:20px;margin-left:5px;display:block;min-height:14px">${fmtDate(r.low_repair_date)}</span>
+        </div>
+      </div>
+    </fieldset>
+    <fieldset class="fieldset-custom job-order-print-reduce" style="flex:3.45;margin-bottom:0"><legend>Job Order</legend>
+      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,minmax(16px,auto));gap:5px">
+        <div style="display:flex;align-items:center"><span style="white-space:nowrap">J.O. No.</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.jo_no)}</span></div>
+        <div style="display:flex;align-items:center"><span style="margin-left:5px">Customer</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.jo_customer)}</span></div>
+        <div style="grid-column:span 2;display:flex;align-items:center"><span>Desc.</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.jo_desc)}</span></div>
+      </div>
+    </fieldset>
+  </div>
+
+  <fieldset class="fieldset-custom"><legend>Faults</legend>
+    <div class="faults-container">
+      <div>
+        <span class="column-title">General Issues</span>
+        <div class="check-item"><input type="checkbox" ${ck("no_power")}><span style="margin-left:10px">No Power</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("overheating")}><span style="margin-left:10px">Overheating</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("unusual_noise")}><span style="margin-left:10px">Unusual Noise</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("vibrating_issues")}><span style="margin-left:10px">Vibrating Issues</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("not_functioning")}><span style="margin-left:10px">Not Functioning Properly</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("slow_performance")}><span style="margin-left:10px">Slow Performance</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("frequent_shutdown")}><span style="margin-left:10px">Frequent Shutdown</span></div>
+      </div>
+      <div>
+        <div class="check-item"><input type="checkbox" ${ck("display_indicator_error")}><span style="margin-left:10px">Display/Indicator Error</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("switch_buttons_not_working")}><span style="margin-left:10px">Switch/Buttons Not Working</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("software_error")}><span style="margin-left:10px">Software/Program Error</span></div>
+        <span class="column-title">Mechanical Issues</span>
+        <div class="check-item"><input type="checkbox" ${ck("loose_parts")}><span style="margin-left:10px">Loose Parts</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("jammed_stuck")}><span style="margin-left:10px">Jammed/Stuck Mechanism</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("broken_damaged_parts")}><span style="margin-left:10px">Broken/Damaged Parts</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("leaking")}><span style="margin-left:10px">Leaking Fluid/Air</span></div>
+      </div>
+      <div>
+        <div class="check-item"><input type="checkbox" ${ck("misalignment")}><span style="margin-left:10px">Misalignment</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("rust_corrosion")}><span style="margin-left:10px">Rust/Corrosion</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("wear_tear")}><span style="margin-left:10px">Wear and Tear</span></div>
+        <span class="column-title">Electrical Issues</span>
+        <div class="check-item"><input type="checkbox" ${ck("blown_fuse")}><span style="margin-left:10px">Blown Fuse</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("wiring_issue")}><span style="margin-left:10px">Wiring Issue</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("short_circuit")}><span style="margin-left:10px">Short Circuit</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("sparks_smokes")}><span style="margin-left:10px">Sparks and Smokes</span></div>
+      </div>
+      <div>
+        <div class="check-item"><input type="checkbox" ${ck("battery_not_charging")}><span style="margin-left:10px">Battery Not Charging</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("voltage_fluctuation")}><span style="margin-left:10px">Voltage Fluctuation</span></div>
+        <span class="column-title">Safety Concerns</span>
+        <div class="check-item"><input type="checkbox" ${ck("exposed_wiring")}><span style="margin-left:10px">Exposed Wiring</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("missing_broken_safety_locks")}><span style="margin-left:10px">Missing/Broken Safety Locks</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("emergency_stop_not_working")}><span style="margin-left:10px">Emergency Stop Not Working</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("protective_cover_missing")}><span style="margin-left:10px">Protective Cover Missing</span></div>
+        <div class="check-item"><input type="checkbox" ${ck("risk_of_burns")}><span style="margin-left:10px">Risk OF Burns (Hot Surface)</span></div>
+      </div>
+    </div>
+    <div style="margin-top:15px"><strong>Summary/Detailed Problems Encountered</strong><div class="text-box">${v(r.summary_problems)}</div></div>
+  </fieldset>
+
+  <div class="user-section">
+    <div class="user-left user-cell" style="grid-row:1;grid-column:1"><strong>User Details</strong></div>
+    <div class="user-middle" style="grid-row:1;grid-column:2"></div>
+    <div class="user-right" style="grid-row:1;grid-column:3"></div>
+    <div class="user-left user-cell" style="grid-row:2;grid-column:1"><div class="label-val" style="margin:0;width:100%"><span style="padding-left:10px">Name</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.requester_name)}</span></div></div>
+    <div class="user-middle user-cell" style="grid-row:2;grid-column:2;justify-content:flex-start;padding-left:10px">Name</div>
+    <div class="user-right user-cell" style="grid-row:2;grid-column:3"><div class="label-val" style="margin:0;width:100%"><span style="padding-left:10px">Name</span> : <span style="flex:1;text-align:center;border-bottom:1px solid #000;margin-left:10px;display:inline-block">${v(r.tool_keeper_name)}</span></div></div>
+    <div class="user-left user-cell" style="grid-row:3;grid-column:1"><div class="label-val" style="margin:0;width:100%"><span style="padding-left:10px">Designation</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.designation)}</span></div></div>
+    <div class="user-middle" style="grid-row:3;grid-column:2"></div>
+    <div class="user-right user-cell" style="grid-row:3;grid-column:3;font-size:10px"><div style="display:flex;width:100%"><span style="visibility:hidden;min-width:80px">Name</span><span style="visibility:hidden"> : </span><span style="flex:1;text-align:center;margin-left:10px">Tool Keeper</span></div></div>
+    <div class="user-left user-cell" style="grid-row:4;grid-column:1"><div class="label-val" style="margin:0;width:100%"><span style="padding-left:10px">Bay/Section</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.bay_section)}</span></div></div>
+    <div class="user-middle user-cell" style="grid-row:4;grid-column:2;align-items:flex-end;justify-content:center"><div class="sig-line" style="width:80%;margin:0"></div></div>
+    <div class="user-right" style="grid-row:4;grid-column:3"></div>
+    <div class="user-left user-cell" style="grid-row:5;grid-column:1"><div class="label-val" style="margin:0;width:100%"><span style="padding-left:10px">Foreman</span> : <span class="u-line" style="flex:1;margin-left:5px;display:inline-block">${v(r.foreman)}</span></div></div>
+    <div class="user-middle user-cell" style="grid-row:5;grid-column:2;justify-content:center;font-size:10px">Signature Over Printed Name</div>
+    <div class="user-right user-cell" style="grid-row:5;grid-column:3"><div class="label-val" style="margin:0;width:100%"><span style="padding-left:10px">Accepted by</span> : <span style="flex:1;border-bottom:1px solid #000;margin-left:10px;display:inline-block;text-align:center">${v(r.accepted_by)}</span></div></div>
+    <div class="user-left" style="grid-row:6;grid-column:1"></div>
+    <div class="user-middle" style="grid-row:6;grid-column:2"></div>
+    <div class="user-right user-cell" style="grid-row:6;grid-column:3;font-size:10px"><div style="display:flex;width:100%"><span style="visibility:hidden;min-width:80px">Accepted by</span><span style="visibility:hidden"> : </span><span style="flex:1;text-align:center;margin-left:10px">Maintenance Personnel</span></div></div>
+  </div>
+
+  <div class="maintenance-divider"><span>FOR MAINTENANCE TECHNICIAN INPUT ONLY</span></div>
+
+  <fieldset class="fieldset-custom"><legend>Service Findings</legend><div class="text-box" style="height:100px">${v(r.service_findings)}</div></fieldset>
+
+  <div class="footer-sections">
+    <fieldset class="fieldset-custom" style="margin:0"><legend>Corrective Actions</legend>
+      <div style="display:flex;gap:15px">
+        <div class="check-item"><input type="checkbox" ${r.corrective_reconditioned ? "checked" : ""}> Reconditioned / Repaired</div>
+        <div class="check-item"><input type="checkbox" ${r.corrective_parts_replaced ? "checked" : ""}> Parts Replaced</div>
+      </div>
+      <p style="margin:10px 0 5px 0">Others, write a short summary</p>
+      <div class="text-box" style="height:80px">${v(r.corrective_others)}</div>
+    </fieldset>
+    <fieldset class="fieldset-custom" style="margin:0;border-left:none"><legend>Part(s) Needed</legend>
+      <div class="parts-grid">${partsRows}</div>
+    </fieldset>
+    <fieldset class="fieldset-custom" style="margin:0;border-left:none"><legend>Final Assesment</legend>
+      <div class="check-item"><input type="checkbox" ${r.final_repairable ? "checked" : ""}><span style="margin-left:10px">Repairable</span></div>
+      <div class="check-item"><input type="checkbox" ${r.final_usable_parts_extraction ? "checked" : ""}><span style="margin-left:10px">Usable Parts Extraction</span></div>
+      <div class="check-item"><input type="checkbox" ${r.final_disposal ? "checked" : ""}><span style="margin-left:10px">Disposal</span></div>
+      <div class="check-item"><input type="checkbox" ${r.final_unit_replacement ? "checked" : ""}><span style="margin-left:10px">Unit Replacement</span></div>
+      <div style="margin-top:10px;padding-left:32px">
+        <div class="label-val" style="margin-bottom:5px"><span style="min-width:50px">PR No.</span> : <span class="u-line" style="width:120px;margin-left:5px;display:inline-block">${v(r.pr_no)}</span></div>
+        <div class="label-val"><span style="min-width:50px">PR Date</span> : <span class="u-line" style="width:120px;margin-left:5px;display:inline-block">${fmtDate(r.pr_date)}</span></div>
+      </div>
+      <div style="margin-top:10px;padding-left:32px">Requested by;<div style="margin-top:10px;text-align:center;width:230px"><span style="display:block;margin-bottom:2px">${v(r.requested_by)}</span><div class="sig-line" style="width:230px">Print Name and Sign</div></div></div>
+    </fieldset>
+  </div>
+
+  <div class="technician-grid">
+    <div>Prepared by:<br><div style="margin-top:10px;text-align:center;width:180px"><span style="display:block;margin-bottom:2px">${v(r.prepared_by)}</span><div style="border-top:1px solid #000;text-align:center">Technician</div></div></div>
+    <div>Inspected by:<br><div style="margin-top:10px;text-align:center;width:180px"><span style="display:block;margin-bottom:2px">${v(r.inspected_by)}</span><div style="border-top:1px solid #000;text-align:center">Maintenance Foreman</div></div></div>
+    <div>Approved by:<br><div style="margin-top:10px;text-align:center;width:180px"><span style="display:block;margin-bottom:2px">${v(r.approved_by)}</span><div style="border-top:1px solid #000;text-align:center">Maintenance Supervisor</div></div></div>
+  </div>
+</div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+
+    const w = window.open("", "_blank");
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+    }
+  };
+
   const buildFaultsJson = () => {
     const out: Record<string, string[]> = {
       general: [],
@@ -856,6 +1087,18 @@ export default function ToolsRepairPage() {
                                 >
                                   <Eye className="size-3.5 shrink-0" />
                                   <span>View</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenActionMenuId(null);
+                                    handlePrint(r);
+                                  }}
+                                  className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 transition-colors hover:bg-green-50 hover:text-green-600 dark:text-gray-300 dark:hover:bg-green-900/30 dark:hover:text-green-400 text-left"
+                                >
+                                  <Printer className="size-3.5 shrink-0" />
+                                  <span>Print</span>
                                 </button>
                                 <button
                                   type="button"

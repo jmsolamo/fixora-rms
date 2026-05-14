@@ -14,26 +14,32 @@
         body {
             font-family: var(--font-main);
             font-size: 11px;
-            background-color: #f4f4f4;
-            padding: 20px;
+            background-color: #fff;
+            padding: 0;
             margin: 0;
         }
 
         .page-container {
-            width: 850px;
+            width: 100%;
+            max-width: 100%;
             margin: 0 auto;
             background: white;
-            padding: 40px;
-            border: 1px solid #ccc;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 0.3in;
+            box-sizing: border-box;
+        }
+
+        @page {
+            margin: 0.3in;
         }
 
         /* Header Styles */
         .header-top {
             display: grid;
             grid-template-columns: 1.5fr 3fr 1.5fr;
-            align-items: flex-start;
+            grid-template-rows: auto auto;
+            align-items: flex-end;
             margin-bottom: 5px;
+            gap: 10px;
         }
 
         .header-center {
@@ -90,7 +96,7 @@
 
         .row {
             display: flex;
-            gap: 15px;
+            gap: 8px;
             margin-bottom: 10px;
         }
 
@@ -138,31 +144,27 @@
 
         /* User Details */
         .user-section {
-            display: flex;
-            margin-top: 10px;
-            border-top: 1px solid var(--border-color);
-            padding-top: 10px;
-            padding-left: 15px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.5fr;
+            grid-template-rows: repeat(6, 16px);
         }
 
         .user-left {
-            flex: 1;
+            padding-left: 15px;
         }
 
         .user-middle {
-            flex: 1;
-            /* Reduced from 1 to make the column narrower */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
             padding: 0 10px;
         }
 
         .user-right {
-            flex: 1.5;
             border-left: 1px solid var(--border-color);
             padding-left: 20px;
+        }
+
+        .user-cell {
+            display: flex;
+            align-items: center;
         }
 
         .sig-line {
@@ -184,30 +186,26 @@
             min-width: 80px;
         }
 
-        /* Divider */
         .maintenance-divider {
             border-top: 2px dashed #000;
-            margin: 25px 0;
+            margin: 20px 0 5px 0;
             text-align: center;
-            position: relative;
         }
 
         .maintenance-divider span {
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            padding: 0 15px;
+            display: block;
+            margin-top: 5px;
             font-style: italic;
             font-weight: bold;
+            font-size: 12px;
         }
 
         /* Footer Grid */
         .footer-sections {
             display: grid;
             grid-template-columns: 1.2fr 1fr 1.2fr;
-            gap: 15px;
+            gap: 0;
+            width: 100%;
         }
 
         .parts-grid {
@@ -220,8 +218,8 @@
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 40px;
-            margin-top: 40px;
-            text-align: center;
+            margin-top: 15px;
+            text-align: left;
         }
 
         @media print {
@@ -231,9 +229,13 @@
             }
 
             .page-container {
-                box-shadow: none;
-                border: none;
+                padding: 0;
                 width: 100%;
+                max-width: none;
+            }
+
+            .job-order-print-reduce {
+                flex: 1 !important;
             }
         }
     </style>
@@ -243,37 +245,31 @@
 
     <div class="page-container">
         <div class="header-top">
-            <div>
+            <!-- Row 1: Checkboxes, Company Name, No -->
+            <div style="grid-row: 1; grid-column: 1; display: flex; gap: 10px;">
                 <label><input type="checkbox"> To Purchase</label>
-                <label style="margin-left:10px;"><input type="checkbox"> For Filing</label>
+                <label><input type="checkbox"> For Filing</label>
             </div>
-            <div class="header-center">
-                <h1>ENERTECH SYSTEMS INDUSTRIES, INC.</h1>
+            <div style="grid-row: 1; grid-column: 2; text-align: center;">
+                <h1 style="font-size: 16px; margin: 0; letter-spacing: 0.5px;">ENERTECH SYSTEMS INDUSTRIES, INC.</h1>
             </div>
-            <div class="header-right">
-                <div style="display: flex; flex-direction: column; align-items: flex-end;">
-                    <!-- No row -->
-                    <div style="display: flex; align-items: center; justify-content: flex-end; width: 100%;">
-                        <span style="font-size: 12px; font-weight: bold; width: 45px; text-align: right;">No:</span>
-                        <!-- Set width to 120px to match the input below -->
-                        <span
-                            style="font-size: 14px; font-family: 'Courier New', Courier, monospace; border-bottom: 1px solid black; width: 120px; display: inline-block; text-align: center; margin-left: 5px;">200000</span>
-                    </div>
-
-                    <!-- Date row -->
-                    <div
-                        style="display: flex; align-items: center; justify-content: flex-end; width: 100%; margin-top: 8px;">
-                        <span style="font-size: 12px; font-weight: bold; width: 45px; text-align: right;">Date:</span>
-                        <!-- Set width to 120px to match the span above -->
-                        <input type="text" class="u-line"
-                            style="width: 120px; margin-left: 5px; padding: 0; text-align: center;">
-                    </div>
+            <div style="grid-row: 1; grid-column: 3; text-align: right;">
+                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                    <span style="font-size: 11px; font-weight: bold; width: 45px;">No:</span>
+                    <span style="font-size: 24px; font-weight: bold; font-family: 'Courier New', Courier, monospace; border-bottom: 1px solid black; width: 100px; text-align: center; margin-left: 5px;">200000</span>
                 </div>
             </div>
-        </div>
 
-        <div class="request-header-row">
-            <div class="request-title">REQUEST FOR REPAIR FORM (Tools/Equipment/Machinery)</div>
+            <!-- Row 2: Title and Date -->
+            <div style="grid-row: 2; grid-column: 1 / span 2; text-align: left;">
+                <div class="request-title" style="font-size: 13px; font-weight: bold;">REQUEST FOR REPAIR FORM (Tools/Equipment/Machinery)</div>
+            </div>
+            <div style="grid-row: 2; grid-column: 3; text-align: right;">
+                <div style="display: flex; align-items: center; justify-content: flex-end;">
+                    <span style="font-size: 11px; font-weight: bold; width: 45px;">Date:</span>
+                    <input type="text" class="u-line" style="width: 100px; margin-left: 5px; padding: 0; text-align: center;">
+                </div>
+            </div>
         </div>
 
         <fieldset class="fieldset-custom">
@@ -297,42 +293,40 @@
             </div>
         </fieldset>
 
-        <div class="row" style="gap: 15px;">
-            <fieldset class="fieldset-custom" style="flex: 0.8;">
+        <div class="row" style="gap: 8px;">
+            <fieldset class="fieldset-custom" style="flex: 0.5; margin-bottom: 0;">
                 <legend>Utilization</legend>
-                <div class="check-item"><input type="checkbox"><span style="margin-left: 10px;">Site</span></div>
-                <div class="check-item"><input type="checkbox"><span style="margin-left: 10px;">Shop</span></div>
+                <div style="display: grid; grid-template-columns: 1fr; grid-template-rows: repeat(2, minmax(16px, auto)); gap: 2px;">
+                    <div class="check-item"><input type="checkbox"><span style="margin-left: 5px;">Site</span></div>
+                    <div class="check-item"><input type="checkbox"><span style="margin-left: 5px;">Shop</span></div>
+                </div>
             </fieldset>
 
-            <fieldset class="fieldset-custom" style="flex: 1.7;">
+            <fieldset class="fieldset-custom" style="flex: 2.5; margin-bottom: 0;">
                 <legend>Service Priority</legend>
-                <div style="display: flex; gap: 15px; margin-bottom: 8px;">
-                    <div style="display: flex; align-items: center;"><input type="checkbox"><span
-                            style="margin-left: 10px;">High</span></div>
-                    <div style="display: flex; align-items: center;"><input type="checkbox"><span
-                            style="margin-left: 10px;">Medium</span></div>
-                    <div style="display: flex; align-items: center;"><input type="checkbox"><span
-                            style="margin-left: 10px;">low</span></div>
-                </div>
-                <div style="display: flex; align-items: center; margin-left: 5px;">
-                    <span>For low, please set repair date :</span>
-                    <input type="text" class="u-line" style="width: 70px; margin-left: 5px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, minmax(16px, auto)); gap: 5px;">
+                    <div class="check-item"><input type="checkbox"><span style="margin-left: 5px;">High</span></div>
+                    <div class="check-item"><input type="checkbox"><span style="margin-left: 5px;">Medium</span></div>
+                    <div class="check-item"><input type="checkbox"><span style="margin-left: 5px;">Low</span></div>
+                    <div style="grid-column: span 3; display: flex; align-items: center; flex-wrap: wrap;">
+                        <span style="font-size: 10px; padding-left: 10px;">For low, please set repair date :</span>
+                        <input type="text" class="u-line" style="flex: 1; min-width: 50px; margin-left: 5px;">
+                    </div>
                 </div>
             </fieldset>
 
-            <fieldset class="fieldset-custom" style="flex: 2.5;">
+            <fieldset class="fieldset-custom job-order-print-reduce" style="flex: 1.5; margin-bottom: 0;">
                 <legend>Job Order</legend>
-                <div class="row" style="margin-bottom: 8px; gap: 10px;">
-                    <div style="display: flex; align-items: center;"><span style="min-width: 50px;">J.O. No.</span> :
-                        <input type="text" class="u-line" style="width: 60px; margin-left: 5px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(2, minmax(16px, auto)); gap: 5px;">
+                    <div style="display: flex; align-items: center;"><span style="white-space: nowrap;">J.O. No.</span> :
+                        <input type="text" class="u-line" style="flex: 1; margin-left: 5px;">
                     </div>
-                    <div style="display: flex; align-items: center;"><span
-                            style="min-width: 60px; margin-left: 5px;">Customer</span> : <input type="text"
-                            class="u-line" style="width: 150px; margin-left: 5px;"></div>
-                </div>
-                <div style="display: flex; align-items: center;">
-                    <span style="min-width: 50px;">Desc.</span> : <input type="text" class="u-line"
-                        style="flex: 1; margin-left: 5px;">
+                    <div style="display: flex; align-items: center;"><span style="margin-left: 5px;">Customer</span> : 
+                        <input type="text" class="u-line" style="flex: 1; margin-left: 5px;">
+                    </div>
+                    <div style="grid-column: span 2; display: flex; align-items: center;">
+                        <span>Desc.</span> : <input type="text" class="u-line" style="flex: 1; margin-left: 5px;">
+                    </div>
                 </div>
             </fieldset>
         </div>
@@ -416,51 +410,79 @@
         </fieldset>
 
         <div class="user-section">
-            <!-- Left Side: User Input -->
-            <div class="user-left">
-                <strong>User Details</strong><br><br>
-                <!-- Changed flex: 1 to width: 180px -->
-                <div class="label-val" style="margin-left: 15px;">
-                    <span>Name</span> : <input type="text" class="u-line" style="width: 150px;  margin-left: 5px;">
+            <!-- Row 1: Header -->
+            <div class="user-left user-cell" style="grid-row: 1; grid-column: 1;"><strong>User Details</strong></div>
+            <div class="user-middle" style="grid-row: 1; grid-column: 2;"></div>
+            <div class="user-right" style="grid-row: 1; grid-column: 3;"></div>
+
+            <!-- Row 2: Name -->
+            <div class="user-left user-cell" style="grid-row: 2; grid-column: 1;">
+                <div class="label-val" style="margin: 0; width: 100%;">
+                    <span style="padding-left: 10px;">Name</span> : <input type="text" class="u-line" style="flex: 1; margin-left: 5px;">
                 </div>
-                <div class="label-val" style="margin-left: 15px;">
-                    <span>Designation</span> : <input type="text" class="u-line"
-                        style="width: 150px; margin-left: 5px;">
-                </div>
-                <div class="label-val" style="margin-left: 15px;">
-                    <span>Bay/Section</span> : <input type="text" class="u-line"
-                        style="width: 150px; margin-left: 5px;">
-                </div>
-                <div class="label-val" style="margin-left: 15px;">
-                    <span>Foreman</span> : <input type="text" class="u-line" style="width: 150px; margin-left: 5px;">
+            </div>
+            <div class="user-middle user-cell" style="grid-row: 2; grid-column: 2; justify-content: flex-start; padding-left: 10px;">
+                Name
+            </div>
+            <div class="user-right user-cell" style="grid-row: 2; grid-column: 3;">
+                <div class="label-val" style="margin: 0; width: 100%;">
+                    <span style="padding-left: 10px;">Name</span> : <span style="flex: 1; text-align: center; border-bottom: 1px solid #000; margin-left: 10px;"></span>
                 </div>
             </div>
 
-            <!-- Middle Side: Signature Line aligned to Bay/Section -->
-            <div class="user-middle">
-                <div style="width: 100%;">
-                    <!-- Spacer to align with Bay/Section -->
-                    <div style="height: 62px;"></div>
-
-                    <!-- The container is now inside a much narrower 'user-middle' -->
-                    <div style="width: 90%; margin: 0 auto;">
-                        <div class="sig-line">Signature Over Printed Name</div>
-                    </div>
-
-                    <div style="height: 20px;"></div>
+            <!-- Row 3: Designation / Tool Keeper Title -->
+            <div class="user-left user-cell" style="grid-row: 3; grid-column: 1;">
+                <div class="label-val" style="margin: 0; width: 100%;">
+                    <span style="padding-left: 10px;">Designation</span> : <input type="text" class="u-line" style="flex: 1; margin-left: 5px;">
+                </div>
+            </div>
+            <div class="user-middle" style="grid-row: 3; grid-column: 2;"></div>
+            <div class="user-right user-cell" style="grid-row: 3; grid-column: 3; font-size: 10px;">
+                <div style="display: flex; width: 100%;">
+                    <span style="visibility: hidden; min-width: 80px;">Name</span>
+                    <span style="visibility: hidden;"> : </span>
+                    <span style="flex: 1; text-align: center; margin-left: 10px;">Tool Keeper</span>
                 </div>
             </div>
 
-            <!-- Right Side: Tool Keeper -->
-            <div class="user-right">
-                <div class="label-val"><span>Name</span> : <span style="flex: 1; text-align: center;"><strong>ANTONIO D.
-                            SABADO</strong></span></div>
-                <div style="text-align: center; font-size: 10px; margin-top: -5px;">Tool Keeper</div>
-                <br>
-                <div class="label-val" style="margin-top: 10px;"><span>Accepted by</span> : <span
-                        style="flex: 1; border-bottom: 1px solid #000;"></span></div>
-                <div style="text-align: center; font-size: 10px; margin-top: -5px;">Maintenance Personnel</div>
+            <!-- Row 4: Bay/Section / Signature Line -->
+            <div class="user-left user-cell" style="grid-row: 4; grid-column: 1;">
+                <div class="label-val" style="margin: 0; width: 100%;">
+                    <span style="padding-left: 10px;">Bay/Section</span> : <input type="text" class="u-line" style="flex: 1; margin-left: 5px;">
+                </div>
             </div>
+            <div class="user-middle user-cell" style="grid-row: 4; grid-column: 2; align-items: flex-end; justify-content: center;">
+                <div class="sig-line" style="width: 80%; margin: 0;"></div>
+            </div>
+            <div class="user-right" style="grid-row: 4; grid-column: 3;"></div>
+
+            <!-- Row 5: Foreman / Signature Title / Accepted by label -->
+            <div class="user-left user-cell" style="grid-row: 5; grid-column: 1;">
+                <div class="label-val" style="margin: 0; width: 100%;">
+                    <span style="padding-left: 10px;">Foreman</span> : <input type="text" class="u-line" style="flex: 1; margin-left: 5px;">
+                </div>
+            </div>
+            <div class="user-middle user-cell" style="grid-row: 5; grid-column: 2; justify-content: center; font-size: 10px;">
+                Signature Over Printed Name
+            </div>
+            <div class="user-right user-cell" style="grid-row: 5; grid-column: 3;">
+                <div class="label-val" style="margin: 0; width: 100%;">
+                    <span style="padding-left: 10px;">Accepted by</span> : <span style="flex: 1; border-bottom: 1px solid #000; margin-left: 10px;"></span>
+                </div>
+            </div>
+
+            <!-- Row 6: Maintenance Title -->
+            <div class="user-left" style="grid-row: 6; grid-column: 1;"></div>
+            <div class="user-middle" style="grid-row: 6; grid-column: 2;"></div>
+            <div class="user-right user-cell" style="grid-row: 6; grid-column: 3; font-size: 10px;">
+                <div style="display: flex; width: 100%;">
+                    <span style="visibility: hidden; min-width: 80px;">Accepted by</span>
+                    <span style="visibility: hidden;"> : </span>
+                    <span style="flex: 1; text-align: center; margin-left: 10px;">Maintenance Personnel</span>
+                </div>
+            </div>
+
+
         </div>
 
         <div class="maintenance-divider">
@@ -473,15 +495,17 @@
         </fieldset>
 
         <div class="footer-sections">
-            <fieldset class="fieldset-custom">
+            <fieldset class="fieldset-custom" style="margin: 0;">
                 <legend>Corrective Actions</legend>
-                <div class="check-item"><input type="checkbox"> Reconditioned / Repaired</div>
-                <div class="check-item"><input type="checkbox"> Parts Replaced</div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="check-item"><input type="checkbox"> Reconditioned / Repaired</div>
+                    <div class="check-item"><input type="checkbox"> Parts Replaced</div>
+                </div>
                 <p style="margin: 10px 0 5px 0;">Others, write a short summary</p>
                 <textarea class="text-box" style="height: 80px;"></textarea>
             </fieldset>
 
-            <fieldset class="fieldset-custom">
+            <fieldset class="fieldset-custom" style="margin: 0; border-left: none;">
                 <legend>Part(s) Needed</legend>
                 <div class="parts-grid">
                     <span>1.</span><input type="text" class="u-line">
@@ -497,7 +521,7 @@
                 </div>
             </fieldset>
 
-            <fieldset class="fieldset-custom" style="flex: 1.2;">
+            <fieldset class="fieldset-custom" style="margin: 0; border-left: none;">
                 <legend>Final Assesment</legend>
                 <div class="check-item"><input type="checkbox"><span style="margin-left: 10px;">Repairable</span></div>
                 <div class="check-item"><input type="checkbox"><span style="margin-left: 10px;">Usable Parts
@@ -505,16 +529,14 @@
                 <div class="check-item"><input type="checkbox"><span style="margin-left: 10px;">Disposal</span></div>
                 <div class="check-item"><input type="checkbox"><span style="margin-left: 10px;">Unit Replacement</span>
                 </div>
-                <div style="margin-top: 10px;">
-                    <div class="label-val"><span style="min-width: 60px;">PR No.</span> : <input type="text"
-                            class="u-line" style="width: 80px; margin-left: 5px;"></div>
-                    <div class="label-val"><span style="min-width: 60px;">PR Date</span> : <input type="text"
-                            class="u-line" style="width: 80px; margin-left: 5px;"></div>
+                <div style="margin-top: 10px; padding-left: 32px;">
+                    <div class="label-val" style="margin-bottom: 5px;"><span style="min-width: 50px;">PR No.</span> : <input type="text" class="u-line" style="width: 120px; margin-left: 5px;"></div>
+                    <div class="label-val"><span style="min-width: 50px;">PR Date</span> : <input type="text" class="u-line" style="width: 120px; margin-left: 5px;"></div>
                 </div>
-                <div style="margin-top: 10px;">
+                <div style="margin-top: 10px; padding-left: 32px;">
                     Requested by;
                     <div style="margin-top: 30px;">
-                        <div class="sig-line">Print Name and Sign</div>
+                        <div class="sig-line" style="width: 230px;">Print Name and Sign</div>
                     </div>
                 </div>
             </fieldset>
@@ -523,16 +545,15 @@
         <div class="technician-grid">
             <div>
                 Prepared by:<br><br><br>
-                <div style="border-top: 1px solid #000;">Technician</div>
+                <div style="border-top: 1px solid #000; text-align: center; width: 180px;">Technician</div>
             </div>
             <div>
-                Inspected by:<br>
-                <div style="margin-top: 10px; font-weight: bold;">SAMUEL S. BRIONES</div>
-                <div style="border-top: 1px solid #000;">Maintenance Foreman</div>
+                Inspected by:<br><br><br>
+                <div style="border-top: 1px solid #000; text-align: center; width: 180px;">Maintenance Foreman</div>
             </div>
             <div>
                 Approved by:<br><br><br>
-                <div style="border-top: 1px solid #000;">Maintenance Supervisor</div>
+                <div style="border-top: 1px solid #000; text-align: center; width: 180px;">Maintenance Supervisor</div>
             </div>
         </div>
     </div>
